@@ -2,10 +2,14 @@ import { attendanceRecords } from "@/data/attendance";
 import { attendanceSettings } from "@/data/settings";
 import { employees } from "@/data/employees";
 import { holidays } from "@/data/holidays";
+import { departments } from "@/data/departments";
 import type { AttendanceRecord } from "@/types/attendance";
+import type { AttendanceStatus } from "@/types/attendance";
+
 
 export interface AttendanceQuery {
   employeeId?: string;
+  departmentId?: string;
   startDate?: string;
   endDate?: string;
   status?: AttendanceRecord["status"];
@@ -21,6 +25,94 @@ export interface AttendanceSummary {
   attendancePercentage: number;
   totalLateMinutes: number;
 }
+
+export interface AttendanceListItem {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  department: string;
+  date: string;
+  status: AttendanceStatus;
+  checkIn?: string;
+  checkOut?: string;
+  workingMinutes?: number;
+  lateMinutes?: number;
+}
+
+export const getAttendanceByDate = (
+  date: string,
+): AttendanceListItem[] => {
+  const records: (AttendanceListItem | null)[] = attendanceRecords
+    .filter((record) => record.date === date)
+    .map((record): AttendanceListItem | null => {
+      const employee = employees.find(
+        (item) => item.id === record.employeeId,
+      );
+
+      if (!employee) {
+        return null;
+      }
+
+      const department = departments.find(
+        (item) => item.id === employee.departmentId,
+      );
+
+      return {
+        id: record.id,
+        employeeId: record.employeeId,
+        employeeName: `${employee.firstName} ${employee.lastName}`,
+        department: department?.name ?? "Unknown",
+        date: record.date,
+        status: record.status,
+        checkIn: record.checkIn,
+        checkOut: record.checkOut,
+        workingMinutes: record.workingMinutes,
+        lateMinutes: record.lateMinutes,
+      };
+    });
+
+  return records.filter(
+    (record): record is AttendanceListItem => record !== null,
+  );
+};
+
+export const getAttendanceList = (
+  query: AttendanceQuery = {},
+): AttendanceListItem[] => {
+  const records = getAttendance(query);
+
+  return records
+    .map((record): AttendanceListItem | null => {
+      const employee = employees.find(
+        (item) => item.id === record.employeeId,
+      );
+
+      if (!employee) {
+        return null;
+      }
+
+      const department = departments.find(
+        (item) => item.id === employee.departmentId,
+      );
+
+      return {
+        id: record.id,
+        employeeId: record.employeeId,
+        employeeName: `${employee.firstName} ${employee.lastName}`,
+        department: department?.name ?? "Unknown",
+        date: record.date,
+        status: record.status,
+        checkIn: record.checkIn,
+        checkOut: record.checkOut,
+        workingMinutes: record.workingMinutes,
+        lateMinutes: record.lateMinutes,
+      };
+    })
+    .filter(
+      (record): record is AttendanceListItem =>
+        record !== null,
+    );
+};
 
 const isDateInRange = (
   date: string,
@@ -83,9 +175,24 @@ export const getAttendance = (
   query: AttendanceQuery = {},
 ): AttendanceRecord[] => {
   return attendanceRecords.filter((record) => {
+    const employee = employees.find(
+      (item) => item.id === record.employeeId,
+    );
+
+    if (!employee) {
+      return false;
+    }
+
     if (
       query.employeeId &&
       record.employeeId !== query.employeeId
+    ) {
+      return false;
+    }
+
+    if (
+      query.departmentId &&
+      employee.departmentId !== query.departmentId
     ) {
       return false;
     }
