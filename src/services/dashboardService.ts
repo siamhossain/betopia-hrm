@@ -1,6 +1,7 @@
 import { attendanceRecords } from "@/data/attendance";
 import { employees } from "@/data/employees";
 import { leaveRequests } from "@/data/leaveRequests";
+import type { LeaveRequest } from "@/types/leave";
 
 export interface DashboardStats {
   totalEmployees: number;
@@ -12,6 +13,85 @@ export interface DashboardStats {
   attendanceRate: number;
   pendingLeaveRequests: number;
 }
+
+export const getLatestAttendanceDate = (): string => {
+  return attendanceRecords.reduce((latestDate, record) => {
+    return record.date > latestDate ? record.date : latestDate;
+  }, "");
+};
+
+export interface AttendanceOverview {
+  present: number;
+  late: number;
+  halfDay: number;
+  absent: number;
+  onLeave: number;
+}
+
+export interface LeaveSummary {
+  pending: number;
+  approved: number;
+  rejected: number;
+  cancelled: number;
+}
+
+export const getAttendanceOverview = (
+  date: string,
+): AttendanceOverview => {
+  const todayAttendance = attendanceRecords.filter(
+    (record) => record.date === date,
+  );
+
+  return {
+    present: todayAttendance.filter(
+      (record) => record.status === "present",
+    ).length,
+
+    late: todayAttendance.filter(
+      (record) => record.status === "late",
+    ).length,
+
+    halfDay: todayAttendance.filter(
+      (record) => record.status === "half_day",
+    ).length,
+
+    absent: todayAttendance.filter(
+      (record) => record.status === "absent",
+    ).length,
+
+    onLeave: todayAttendance.filter(
+      (record) => record.status === "leave",
+    ).length,
+  };
+};
+
+export const getLeaveSummary = (): LeaveSummary => {
+  return {
+    pending: leaveRequests.filter(
+      (request) => request.status === "pending",
+    ).length,
+
+    approved: leaveRequests.filter(
+      (request) => request.status === "approved",
+    ).length,
+
+    rejected: leaveRequests.filter(
+      (request) => request.status === "rejected",
+    ).length,
+
+    cancelled: leaveRequests.filter(
+      (request) => request.status === "cancelled",
+    ).length,
+  };
+};
+
+export const getRecentLeaveRequests = (
+  limit = 5,
+): LeaveRequest[] => {
+  return [...leaveRequests]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, limit);
+};
 
 export const getDashboardStats = (
   date: string,
