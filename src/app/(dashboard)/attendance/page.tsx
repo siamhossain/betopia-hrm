@@ -3,12 +3,13 @@
 import { useMemo, useState } from "react";
 
 import { AttendanceTable } from "@/components/attendance/AttendanceTable";
+import { departments } from "@/data/departments";
 import {
-  getAttendanceByDate,
+  getAttendanceList,
   type AttendanceListItem,
 } from "@/services/attendanceService";
 
-const ATTENDANCE_DATE = "2026-08-20";
+const DEFAULT_MONTH = "2026-08";
 
 const statusOptions: {
   value: AttendanceListItem["status"] | "all";
@@ -22,67 +23,49 @@ const statusOptions: {
   { value: "leave", label: "Leave" },
 ];
 
-const formatDate = (date: string) => {
-  const parsedDate = new Date(`${date}T00:00:00`);
+const getMonthDateRange = (month: string) => {
+  const [year, monthNumber] = month.split("-").map(Number);
 
-  return parsedDate.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const startDate = `${year}-${String(monthNumber).padStart(2, "0")}-01`;
+
+  const lastDay = new Date(year, monthNumber, 0).getDate();
+
+  const endDate = `${year}-${String(monthNumber).padStart(2, "0")}-${String(
+    lastDay,
+  ).padStart(2, "0")}`;
+
+  return { startDate, endDate };
 };
 
-const changeDate = (date: string, days: number) => {
-  const [year, month, day] = date.split("-").map(Number);
+const formatMonth = (month: string) => {
+  const [year, monthNumber] = month.split("-").map(Number);
 
-  const currentDate = new Date(year, month - 1, day);
-
-  currentDate.setDate(currentDate.getDate() + days);
-
-  const nextYear = currentDate.getFullYear();
-  const nextMonth = String(currentDate.getMonth() + 1).padStart(2, "0");
-  const nextDay = String(currentDate.getDate()).padStart(2, "0");
-
-  return `${nextYear}-${nextMonth}-${nextDay}`;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(year, monthNumber - 1, 1));
 };
 
 export default function AttendancePage() {
-  const [selectedDate, setSelectedDate] = useState(ATTENDANCE_DATE);
+  const [selectedMonth, setSelectedMonth] = useState(DEFAULT_MONTH);
   const [selectedStatus, setSelectedStatus] = useState<
     AttendanceListItem["status"] | "all"
   >("all");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
 
-  const attendanceRecords = useMemo(
-    () => getAttendanceByDate(selectedDate),
-    [selectedDate],
-  );
+  const attendanceRecords = useMemo(() => {
+    const { startDate, endDate } = getMonthDateRange(selectedMonth);
 
-  const filteredRecords = useMemo(() => {
-    if (selectedStatus === "all") {
-      return attendanceRecords;
-    }
-
-    return attendanceRecords.filter(
-      (record) => record.status === selectedStatus,
-    );
-  }, [attendanceRecords, selectedStatus]);
-
-  const handlePreviousDay = () => {
-    setSelectedDate((currentDate) => changeDate(currentDate, -1));
-  };
-
-  const handleNextDay = () => {
-    setSelectedDate((currentDate) => changeDate(currentDate, 1));
-  };
-
-  const handleToday = () => {
-    setSelectedDate(ATTENDANCE_DATE);
-  };
+    return getAttendanceList({
+      startDate,
+      endDate,
+      departmentId: selectedDepartment || undefined,
+      status: selectedStatus === "all" ? undefined : selectedStatus,
+    });
+  }, [selectedMonth, selectedStatus, selectedDepartment]);
 
   return (
     <section>
-      {/* Page Header */}
       <div>
         <p className="text-sm font-medium text-gray-500">
           Attendance Management
@@ -91,66 +74,57 @@ export default function AttendancePage() {
         <h1 className="mt-1 text-2xl font-bold text-gray-900">Attendance</h1>
 
         <p className="mt-2 text-sm text-gray-600">
-          Track employee attendance and daily working status.
+          Review employee attendance records by month, department, and status.
         </p>
       </div>
 
-      {/* Filters & Date Navigation */}
       <div className="mt-6 rounded-xl border bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          {/* Date Navigation */}
+        <div className="grid gap-4 md:grid-cols-3">
           <div>
             <label
-              htmlFor="attendance-date"
-              className="block text-xs font-medium uppercase tracking-wide text-gray-500"
+              htmlFor="attendance-month"
+              className="mb-1.5 block text-sm font-medium text-gray-700"
             >
-              Attendance Date
+              Month
             </label>
 
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={handlePreviousDay}
-                className="rounded-lg border px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-              >
-                ← Previous
-              </button>
-
-              <input
-                id="attendance-date"
-                type="date"
-                value={selectedDate}
-                onChange={(event) => setSelectedDate(event.target.value)}
-                className="rounded-lg border px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400"
-              />
-
-              <button
-                type="button"
-                onClick={handleNextDay}
-                className="rounded-lg border px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-              >
-                Next →
-              </button>
-
-              <button
-                type="button"
-                onClick={handleToday}
-                className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-800"
-              >
-                Today
-              </button>
-            </div>
-
-            <p className="mt-2 text-sm text-gray-500">
-              {formatDate(selectedDate)}
-            </p>
+            <input
+              id="attendance-month"
+              type="month"
+              value={selectedMonth}
+              onChange={(event) => setSelectedMonth(event.target.value)}
+              className="w-full rounded-lg border px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400"
+            />
           </div>
 
-          {/* Status Filter */}
-          <div className="w-full lg:w-56">
+          <div>
+            <label
+              htmlFor="attendance-department"
+              className="mb-1.5 block text-sm font-medium text-gray-700"
+            >
+              Department
+            </label>
+
+            <select
+              id="attendance-department"
+              value={selectedDepartment}
+              onChange={(event) => setSelectedDepartment(event.target.value)}
+              className="w-full rounded-lg border px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400"
+            >
+              <option value="">All Departments</option>
+
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
             <label
               htmlFor="attendance-status"
-              className="block text-xs font-medium uppercase tracking-wide text-gray-500"
+              className="mb-1.5 block text-sm font-medium text-gray-700"
             >
               Status
             </label>
@@ -163,7 +137,7 @@ export default function AttendancePage() {
                   event.target.value as AttendanceListItem["status"] | "all",
                 )
               }
-              className="mt-2 w-full rounded-lg border px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400"
+              className="w-full rounded-lg border px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400"
             >
               {statusOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -175,30 +149,34 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      {/* Result Summary */}
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-gray-600">
           Showing{" "}
           <span className="font-semibold text-gray-900">
-            {filteredRecords.length}
+            {attendanceRecords.length}
           </span>{" "}
-          attendance records
+          records for{" "}
+          <span className="font-semibold text-gray-900">
+            {formatMonth(selectedMonth)}
+          </span>
         </p>
 
         <button
           type="button"
-          onClick={() => setSelectedStatus("all")}
-          disabled={selectedStatus === "all"}
-          className="text-sm font-medium text-gray-700 underline underline-offset-2 hover:text-gray-900 disabled:cursor-not-allowed disabled:no-underline disabled:opacity-40"
+          onClick={() => {
+            setSelectedStatus("all");
+            setSelectedDepartment("");
+          }}
+          disabled={selectedStatus === "all" && !selectedDepartment}
+          className="text-left text-sm font-medium text-gray-700 underline underline-offset-2 hover:text-gray-900 disabled:cursor-not-allowed disabled:no-underline disabled:opacity-40 sm:text-right"
         >
-          Clear filter
+          Clear filters
         </button>
       </div>
 
-      {/* Attendance Table */}
       <div className="mt-4">
-        {filteredRecords.length > 0 ? (
-          <AttendanceTable records={filteredRecords} />
+        {attendanceRecords.length > 0 ? (
+          <AttendanceTable records={attendanceRecords} />
         ) : (
           <div className="rounded-xl border bg-white px-6 py-12 text-center shadow-sm">
             <p className="font-medium text-gray-900">
@@ -206,7 +184,7 @@ export default function AttendancePage() {
             </p>
 
             <p className="mt-1 text-sm text-gray-500">
-              Try selecting another date or changing the status filter.
+              Try selecting another month or changing the filters.
             </p>
           </div>
         )}
