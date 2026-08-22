@@ -9,6 +9,7 @@ import {
 } from "@/services/leaveService";
 import type { LeaveRequest } from "@/types/leave";
 import { LeaveFilters } from "@/components/leave/LeaveFilters";
+import { LeaveRequestDetails } from "@/components/leave/LeaveRequestDetails";
 
 interface LeaveManagementProps {
   requests: LeaveRequest[];
@@ -18,9 +19,12 @@ export function LeaveManagement({
   requests: initialRequests,
 }: LeaveManagementProps) {
   const [requests, setRequests] = useState(initialRequests);
+  const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(
+    null,
+  );
 
   const handleView = (request: LeaveRequest) => {
-    console.log("View leave request:", request.id);
+    setSelectedRequest(request);
   };
 
   const handleApprove = (request: LeaveRequest) => {
@@ -35,6 +39,8 @@ export function LeaveManagement({
         item.id === result.request!.id ? result.request! : item,
       ),
     );
+
+    setSelectedRequest(result.request);
   };
 
   const handleReject = (request: LeaveRequest) => {
@@ -49,6 +55,8 @@ export function LeaveManagement({
         item.id === result.request!.id ? result.request! : item,
       ),
     );
+
+    setSelectedRequest(result.request);
   };
 
   const handleCancel = (request: LeaveRequest) => {
@@ -63,15 +71,26 @@ export function LeaveManagement({
         item.id === result.request!.id ? result.request! : item,
       ),
     );
+
+    setSelectedRequest(result.request);
   };
 
   return (
-    <LeaveFilters
-      requests={requests}
-      onView={handleView}
-      onApprove={handleApprove}
-      onReject={handleReject}
-      onCancel={handleCancel}
-    />
+    <>
+      <LeaveFilters
+        requests={requests}
+        onView={handleView}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        onCancel={handleCancel}
+      />
+
+      {selectedRequest && (
+        <LeaveRequestDetails
+          request={selectedRequest}
+          onClose={() => setSelectedRequest(null)}
+        />
+      )}
+    </>
   );
 }
