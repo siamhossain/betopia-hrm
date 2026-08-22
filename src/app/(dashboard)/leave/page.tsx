@@ -1,4 +1,4 @@
-import { LeaveRequestTable } from "@/components/leave/LeaveRequestTable";
+import { LeaveFilters } from "@/components/leave/LeaveFilters";
 import { getLeaveRequests } from "@/services/leaveService";
 
 export default function LeavePage() {
@@ -19,7 +19,7 @@ export default function LeavePage() {
       </div>
 
       <div className="mt-6">
-        <LeaveRequestTable requests={requests} />
+        <LeaveFilters requests={requests} />
       </div>
     </section>
   );
