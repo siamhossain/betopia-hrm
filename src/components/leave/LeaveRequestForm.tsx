@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 
+import { LeaveBalancePreview } from "@/components/leave/LeaveBalancePreview";
 import { employees } from "@/data/employees";
 import { leaveTypes } from "@/data/leaveTypes";
 import { createLeaveRequest } from "@/services/leaveService";
-import { LeaveBalancePreview } from "@/components/leave/LeaveBalancePreview";
 import type { LeaveDuration } from "@/types/leave";
 
 interface LeaveRequestFormProps {
@@ -25,7 +25,6 @@ export function LeaveRequestForm({
   const [endDate, setEndDate] = useState("");
   const [duration, setDuration] = useState<LeaveDuration>("full_day");
   const [reason, setReason] = useState("");
-
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,9 +32,19 @@ export function LeaveRequestForm({
     (leaveType) => leaveType.id === leaveTypeId,
   );
 
+  const handleLeaveTypeChange = (value: string) => {
+    setLeaveTypeId(value);
+    setDuration("full_day");
+    setError("");
+  };
+
+  const handleDurationChange = (value: string) => {
+    setDuration(value as LeaveDuration);
+    setError("");
+  };
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
     setError("");
     setIsSubmitting(true);
 
@@ -64,11 +73,9 @@ export function LeaveRequestForm({
         <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
           Leave Management
         </p>
-
         <h2 className="mt-1 text-lg font-semibold text-gray-900">
           Create Leave Request
         </h2>
-
         <p className="mt-1 text-sm text-gray-600">
           Submit a new leave request for an employee.
         </p>
@@ -83,11 +90,13 @@ export function LeaveRequestForm({
             >
               Employee
             </label>
-
             <select
               id="employee"
               value={selectedEmployeeId}
-              onChange={(event) => setSelectedEmployeeId(event.target.value)}
+              onChange={(event) => {
+                setSelectedEmployeeId(event.target.value);
+                setError("");
+              }}
               className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:border-gray-400"
             >
               {employees
@@ -108,19 +117,14 @@ export function LeaveRequestForm({
             >
               Leave Type
             </label>
-
             <select
               id="leaveType"
               value={leaveTypeId}
-              onChange={(event) => {
-                setLeaveTypeId(event.target.value);
-                setDuration("full_day");
-              }}
+              onChange={(event) => handleLeaveTypeChange(event.target.value)}
               required
               className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:border-gray-400"
             >
               <option value="">Select leave type</option>
-
               {leaveTypes.map((leaveType) => (
                 <option key={leaveType.id} value={leaveType.id}>
                   {leaveType.name}
@@ -136,12 +140,14 @@ export function LeaveRequestForm({
             >
               Start Date
             </label>
-
             <input
               id="startDate"
               type="date"
               value={startDate}
-              onChange={(event) => setStartDate(event.target.value)}
+              onChange={(event) => {
+                setStartDate(event.target.value);
+                setError("");
+              }}
               required
               className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:border-gray-400"
             />
@@ -154,12 +160,14 @@ export function LeaveRequestForm({
             >
               End Date
             </label>
-
             <input
               id="endDate"
               type="date"
               value={endDate}
-              onChange={(event) => setEndDate(event.target.value)}
+              onChange={(event) => {
+                setEndDate(event.target.value);
+                setError("");
+              }}
               required
               className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:border-gray-400"
             />
@@ -172,17 +180,13 @@ export function LeaveRequestForm({
             >
               Duration
             </label>
-
             <select
               id="duration"
               value={duration}
-              onChange={(event) =>
-                setDuration(event.target.value as LeaveDuration)
-              }
-              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-gray-400"
+              onChange={(event) => handleDurationChange(event.target.value)}
+              className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:border-gray-400"
             >
               <option value="full_day">Full Day</option>
-
               {selectedLeaveType?.allowHalfDay && (
                 <option value="half_day">Half Day</option>
               )}
@@ -201,11 +205,13 @@ export function LeaveRequestForm({
             >
               Reason
             </label>
-
             <textarea
               id="reason"
               value={reason}
-              onChange={(event) => setReason(event.target.value)}
+              onChange={(event) => {
+                setReason(event.target.value);
+                setError("");
+              }}
               required
               rows={4}
               placeholder="Enter the reason for this leave request..."
@@ -229,7 +235,6 @@ export function LeaveRequestForm({
           >
             Cancel
           </button>
-
           <button
             type="submit"
             disabled={isSubmitting}

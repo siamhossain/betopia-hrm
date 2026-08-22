@@ -1,9 +1,15 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+
 import { employees } from "@/data/employees";
+import { leaveTypes } from "@/data/leaveTypes";
 import { mockSessions } from "@/data/mockSession";
 import {
   calculateLeaveBalance,
   getEmployeeLeaveRequests,
 } from "@/services/leaveService";
+import { LeaveRequestForm } from "@/components/leave/LeaveRequestForm";
 import type { LeaveRequest } from "@/types/leave";
 
 const statusStyles: Record<LeaveRequest["status"], string> = {
@@ -84,18 +90,62 @@ export default function MyLeavePage() {
 
   const employee = employees.find((item) => item.id === employeeId);
 
-  const leaveRequests = getEmployeeLeaveRequests(employeeId);
+  const [showForm, setShowForm] = useState(false);
+  const [, setRefreshKey] = useState(0);
 
+  const refreshData = useCallback(() => {
+    setRefreshKey((value) => value + 1);
+  }, []);
+
+  useEffect(() => {
+    if (!showForm) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowForm(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showForm]);
+
+  if (!employee) {
+    return (
+      <div className="rounded-xl border bg-white p-6 shadow-sm">
+        <p className="text-sm text-red-600">
+          Employee profile could not be found.
+        </p>
+      </div>
+    );
+  }
+
+  const leaveRequests = getEmployeeLeaveRequests(employeeId);
   const leaveBalances = calculateLeaveBalance(employeeId);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">My Leave</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">My Leave</h1>
 
-        <p className="mt-1 text-sm text-gray-500">
-          {employee?.firstName} {employee?.lastName} · {employee?.employeeCode}
-        </p>
+          <p className="mt-1 text-sm text-gray-500">
+            {employee.firstName} {employee.lastName} · {employee.employeeCode}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
+        >
+          Request Leave
+        </button>
       </div>
 
       <section>
@@ -147,23 +197,18 @@ export default function MyLeavePage() {
                     <th className="px-5 py-3 font-medium text-gray-600">
                       Leave Type
                     </th>
-
                     <th className="px-5 py-3 font-medium text-gray-600">
                       Start Date
                     </th>
-
                     <th className="px-5 py-3 font-medium text-gray-600">
                       End Date
                     </th>
-
                     <th className="px-5 py-3 font-medium text-gray-600">
                       Duration
                     </th>
-
                     <th className="px-5 py-3 font-medium text-gray-600">
                       Reason
                     </th>
-
                     <th className="px-5 py-3 font-medium text-gray-600">
                       Status
                     </th>
@@ -172,25 +217,25 @@ export default function MyLeavePage() {
 
                 <tbody className="divide-y">
                   {leaveRequests.map((request) => {
-                    const leaveType = leaveBalances.find(
-                      (item) => item.leaveTypeId === request.leaveTypeId,
+                    const leaveType = leaveTypes.find(
+                      (item) => item.id === request.leaveTypeId,
                     );
 
                     return (
                       <tr key={request.id} className="hover:bg-gray-50">
                         <td className="px-5 py-4 font-medium text-gray-900">
-                          {leaveType?.leaveTypeName ?? "Unknown"}
+                          {leaveType?.name ?? "Unknown"}
                         </td>
 
-                        <td className="px-5 py-4 whitespace-nowrap text-gray-600">
+                        <td className="whitespace-nowrap px-5 py-4 text-gray-600">
                           {formatDate(request.startDate)}
                         </td>
 
-                        <td className="px-5 py-4 whitespace-nowrap text-gray-600">
+                        <td className="whitespace-nowrap px-5 py-4 text-gray-600">
                           {formatDate(request.endDate)}
                         </td>
 
-                        <td className="px-5 py-4 whitespace-nowrap text-gray-600">
+                        <td className="whitespace-nowrap px-5 py-4 text-gray-600">
                           {formatDuration(request.duration)}
                         </td>
 
@@ -200,9 +245,7 @@ export default function MyLeavePage() {
 
                         <td className="px-5 py-4">
                           <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                              statusStyles[request.status]
-                            }`}
+                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[request.status]}`}
                           >
                             {formatStatus(request.status)}
                           </span>
@@ -216,6 +259,42 @@ export default function MyLeavePage() {
           )}
         </div>
       </section>
+
+      {showForm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onMouseDown={() => setShowForm(false)}
+          role="presentation"
+        >
+          <div
+            className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl"
+            onMouseDown={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="leave-request-dialog-title"
+          >
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              aria-label="Close leave request form"
+              className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white text-xl leading-none text-gray-500 shadow-sm transition hover:bg-gray-100 hover:text-gray-900"
+            >
+              ×
+            </button>
+
+            <div id="leave-request-dialog-title">
+              <LeaveRequestForm
+                employeeId={employeeId}
+                onSuccess={() => {
+                  setShowForm(false);
+                  refreshData();
+                }}
+                onCancel={() => setShowForm(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
