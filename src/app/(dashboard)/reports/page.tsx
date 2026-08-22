@@ -1,14 +1,101 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
 import { employees } from "@/data/employees";
+import { getAttendance } from "@/services/attendanceService";
 import {
   getDashboardStats,
   getLatestAttendanceDate,
 } from "@/services/dashboardService";
 import { getLeaveRequests } from "@/services/leaveService";
 
+const DEFAULT_MONTH = "2026-08";
+
+const getMonthDateRange = (month: string) => {
+  const [year, monthNumber] = month.split("-").map(Number);
+
+  const startDate = `${year}-${String(monthNumber).padStart(2, "0")}-01`;
+
+  const lastDay = new Date(year, monthNumber, 0).getDate();
+
+  const endDate = `${year}-${String(monthNumber).padStart(2, "0")}-${String(
+    lastDay,
+  ).padStart(2, "0")}`;
+
+  return { startDate, endDate };
+};
+
+const formatMonth = (month: string) => {
+  const [year, monthNumber] = month.split("-").map(Number);
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(year, monthNumber - 1, 1));
+};
+
 export default function ReportsPage() {
+  const [selectedMonth, setSelectedMonth] = useState(DEFAULT_MONTH);
+
   const reportDate = getLatestAttendanceDate();
   const stats = getDashboardStats(reportDate);
   const leaveRequests = getLeaveRequests();
+
+  const monthlyAttendance = useMemo(() => {
+    const { startDate, endDate } = getMonthDateRange(selectedMonth);
+
+    const records = getAttendance({
+      startDate,
+      endDate,
+    });
+
+    const presentDays = records.filter(
+      (record) => record.status === "present",
+    ).length;
+
+    const lateDays = records.filter(
+      (record) => record.status === "late",
+    ).length;
+
+    const halfDays = records.filter(
+      (record) => record.status === "half_day",
+    ).length;
+
+    const absentDays = records.filter(
+      (record) => record.status === "absent",
+    ).length;
+
+    const leaveDays = records.filter(
+      (record) => record.status === "leave",
+    ).length;
+
+    const totalWorkingRecords =
+      presentDays + lateDays + halfDays + absentDays + leaveDays;
+
+    const attendanceDays = presentDays + lateDays + halfDays * 0.5;
+
+    const attendancePercentage =
+      totalWorkingRecords === 0
+        ? 0
+        : Number(((attendanceDays / totalWorkingRecords) * 100).toFixed(2));
+
+    const totalLateMinutes = records.reduce(
+      (total, record) => total + (record.lateMinutes ?? 0),
+      0,
+    );
+
+    return {
+      totalRecords: records.length,
+      presentDays,
+      lateDays,
+      halfDays,
+      absentDays,
+      leaveDays,
+      attendancePercentage,
+      totalLateMinutes,
+    };
+  }, [selectedMonth]);
 
   const reportCards = [
     {
@@ -68,8 +155,97 @@ export default function ReportsPage() {
       </div>
 
       <div className="mt-6 rounded-xl border bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Monthly Attendance Summary
+            </h2>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Attendance overview for {formatMonth(selectedMonth)}.
+            </p>
+          </div>
+
+          <div>
+            <label
+              htmlFor="report-month"
+              className="mb-1.5 block text-sm font-medium text-gray-700"
+            >
+              Month
+            </label>
+
+            <input
+              id="report-month"
+              type="month"
+              value={selectedMonth}
+              onChange={(event) => setSelectedMonth(event.target.value)}
+              className="rounded-lg border px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Attendance Rate</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900">
+              {monthlyAttendance.attendancePercentage}%
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Present</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900">
+              {monthlyAttendance.presentDays}
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Late</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900">
+              {monthlyAttendance.lateDays}
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Half Day</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900">
+              {monthlyAttendance.halfDays}
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Absent</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900">
+              {monthlyAttendance.absentDays}
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">On Leave</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900">
+              {monthlyAttendance.leaveDays}
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Late Minutes</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900">
+              {monthlyAttendance.totalLateMinutes}
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Total Records</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900">
+              {monthlyAttendance.totalRecords}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-xl border bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900">
-          Attendance Summary
+          Daily Attendance Summary
         </h2>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
