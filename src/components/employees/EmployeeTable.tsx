@@ -59,55 +59,69 @@ export function EmployeeTable({ employees, onView }: EmployeeTableProps) {
           </thead>
 
           <tbody className="divide-y">
-            {employees.map((employee) => (
-              <tr key={employee.id} className="hover:bg-gray-50">
-                <td className="px-5 py-4">
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {employee.firstName} {employee.lastName}
-                    </p>
+            {employees.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-5 py-12 text-center">
+                  <p className="text-sm font-medium text-gray-900">
+                    No employees found
+                  </p>
 
-                    <p className="text-xs text-gray-500">{employee.email}</p>
-                  </div>
-                </td>
-
-                <td className="px-5 py-4 text-gray-600">
-                  {employee.employeeCode}
-                </td>
-
-                <td className="px-5 py-4 text-gray-600">
-                  {employee.designation}
-                </td>
-
-                <td className="px-5 py-4 text-gray-600">
-                  {employee.departmentId}
-                </td>
-
-                <td className="px-5 py-4 whitespace-nowrap text-gray-600">
-                  {formatDate(employee.joiningDate)}
-                </td>
-
-                <td className="px-5 py-4">
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                      statusStyles[employee.status]
-                    }`}
-                  >
-                    {formatStatus(employee.status)}
-                  </span>
-                </td>
-
-                <td className="px-5 py-4">
-                  <button
-                    type="button"
-                    onClick={() => onView(employee)}
-                    className="text-sm font-medium text-gray-600 hover:text-gray-900"
-                  >
-                    View
-                  </button>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Try adjusting your search or filters.
+                  </p>
                 </td>
               </tr>
-            ))}
+            ) : (
+              employees.map((employee) => (
+                <tr key={employee.id} className="hover:bg-gray-50">
+                  <td className="px-5 py-4">
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {employee.firstName} {employee.lastName}
+                      </p>
+
+                      <p className="text-xs text-gray-500">{employee.email}</p>
+                    </div>
+                  </td>
+
+                  <td className="px-5 py-4 text-gray-600">
+                    {employee.employeeCode}
+                  </td>
+
+                  <td className="px-5 py-4 text-gray-600">
+                    {employee.designation}
+                  </td>
+
+                  <td className="px-5 py-4 text-gray-600">
+                    {employee.departmentId}
+                  </td>
+
+                  <td className="px-5 py-4 whitespace-nowrap text-gray-600">
+                    {formatDate(employee.joiningDate)}
+                  </td>
+
+                  <td className="px-5 py-4">
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+                        statusStyles[employee.status]
+                      }`}
+                    >
+                      {formatStatus(employee.status)}
+                    </span>
+                  </td>
+
+                  <td className="px-5 py-4">
+                    <button
+                      type="button"
+                      onClick={() => onView(employee)}
+                      className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
