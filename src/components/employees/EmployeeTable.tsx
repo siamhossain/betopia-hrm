@@ -1,0 +1,114 @@
+import type { Employee } from "@/types/employee";
+
+interface EmployeeTableProps {
+  employees: Employee[];
+}
+
+const statusStyles: Record<Employee["status"], string> = {
+  active: "bg-green-50 text-green-700",
+  inactive: "bg-gray-100 text-gray-600",
+  on_leave: "bg-amber-50 text-amber-700",
+  resigned: "bg-red-50 text-red-700",
+};
+
+const formatStatus = (status: Employee["status"]) => {
+  return status
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+};
+
+const formatDate = (date: string) => {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(`${date}T00:00:00`));
+};
+
+export function EmployeeTable({ employees }: EmployeeTableProps) {
+  return (
+    <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[1000px] text-left text-sm">
+          <thead className="border-b bg-gray-50">
+            <tr>
+              <th className="px-5 py-3 font-medium text-gray-600">Employee</th>
+
+              <th className="px-5 py-3 font-medium text-gray-600">
+                Employee Code
+              </th>
+
+              <th className="px-5 py-3 font-medium text-gray-600">
+                Designation
+              </th>
+
+              <th className="px-5 py-3 font-medium text-gray-600">
+                Department
+              </th>
+
+              <th className="px-5 py-3 font-medium text-gray-600">
+                Joining Date
+              </th>
+
+              <th className="px-5 py-3 font-medium text-gray-600">Status</th>
+
+              <th className="px-5 py-3 font-medium text-gray-600">Action</th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y">
+            {employees.map((employee) => (
+              <tr key={employee.id} className="hover:bg-gray-50">
+                <td className="px-5 py-4">
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {employee.firstName} {employee.lastName}
+                    </p>
+
+                    <p className="text-xs text-gray-500">{employee.email}</p>
+                  </div>
+                </td>
+
+                <td className="px-5 py-4 text-gray-600">
+                  {employee.employeeCode}
+                </td>
+
+                <td className="px-5 py-4 text-gray-600">
+                  {employee.designation}
+                </td>
+
+                <td className="px-5 py-4 text-gray-600">
+                  {employee.departmentId}
+                </td>
+
+                <td className="px-5 py-4 whitespace-nowrap text-gray-600">
+                  {formatDate(employee.joiningDate)}
+                </td>
+
+                <td className="px-5 py-4">
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+                      statusStyles[employee.status]
+                    }`}
+                  >
+                    {formatStatus(employee.status)}
+                  </span>
+                </td>
+
+                <td className="px-5 py-4">
+                  <button
+                    type="button"
+                    className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                  >
+                    View
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
