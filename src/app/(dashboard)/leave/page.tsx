@@ -1,4 +1,9 @@
+import { LeaveRequestTable } from "@/components/leave/LeaveRequestTable";
+import { getLeaveRequests } from "@/services/leaveService";
+
 export default function LeavePage() {
+  const requests = getLeaveRequests();
+
   return (
     <section>
       <div>
@@ -11,6 +16,10 @@ export default function LeavePage() {
         <p className="mt-2 text-sm text-gray-600">
           Review and manage employee leave requests.
         </p>
+      </div>
+
+      <div className="mt-6">
+        <LeaveRequestTable requests={requests} />
       </div>
     </section>
   );
