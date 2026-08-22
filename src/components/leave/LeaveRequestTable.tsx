@@ -1,9 +1,14 @@
 import { employees } from "@/data/employees";
 import { leaveTypes } from "@/data/leaveTypes";
+import { LeaveRequestActions } from "@/components/leave/LeaveRequestActions";
 import type { LeaveRequest } from "@/types/leave";
 
 interface LeaveRequestTableProps {
   requests: LeaveRequest[];
+  onView: (request: LeaveRequest) => void;
+  onApprove: (request: LeaveRequest) => void;
+  onReject: (request: LeaveRequest) => void;
+  onCancel: (request: LeaveRequest) => void;
 }
 
 const statusStyles: Record<LeaveRequest["status"], string> = {
@@ -29,7 +34,13 @@ const formatDateRange = (startDate: string, endDate: string) => {
   return `${startDate} → ${endDate}`;
 };
 
-export function LeaveRequestTable({ requests }: LeaveRequestTableProps) {
+export function LeaveRequestTable({
+  requests,
+  onView,
+  onApprove,
+  onReject,
+  onCancel,
+}: LeaveRequestTableProps) {
   return (
     <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
       <div className="overflow-x-auto">
@@ -115,13 +126,13 @@ export function LeaveRequestTable({ requests }: LeaveRequestTableProps) {
                   </td>
 
                   <td className="px-5 py-4">
-                    <button
-                      type="button"
-                      className="text-sm font-medium text-gray-500"
-                      disabled
-                    >
-                      View
-                    </button>
+                    <LeaveRequestActions
+                      request={request}
+                      onView={() => onView(request)}
+                      onApprove={() => onApprove(request)}
+                      onReject={() => onReject(request)}
+                      onCancel={() => onCancel(request)}
+                    />
                   </td>
                 </tr>
               );

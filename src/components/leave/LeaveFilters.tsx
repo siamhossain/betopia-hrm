@@ -4,14 +4,24 @@ import { useMemo, useState } from "react";
 
 import { employees } from "@/data/employees";
 import { leaveTypes } from "@/data/leaveTypes";
-import type { LeaveRequest } from "@/types/leave";
 import { LeaveRequestTable } from "@/components/leave/LeaveRequestTable";
+import type { LeaveRequest } from "@/types/leave";
 
 interface LeaveFiltersProps {
   requests: LeaveRequest[];
+  onView: (request: LeaveRequest) => void;
+  onApprove: (request: LeaveRequest) => void;
+  onReject: (request: LeaveRequest) => void;
+  onCancel: (request: LeaveRequest) => void;
 }
 
-export function LeaveFilters({ requests }: LeaveFiltersProps) {
+export function LeaveFilters({
+  requests,
+  onView,
+  onApprove,
+  onReject,
+  onCancel,
+}: LeaveFiltersProps) {
   const [status, setStatus] = useState<LeaveRequest["status"] | "">("");
   const [leaveTypeId, setLeaveTypeId] = useState("");
   const [employeeId, setEmployeeId] = useState("");
@@ -40,6 +50,22 @@ export function LeaveFilters({ requests }: LeaveFiltersProps) {
     setStatus("");
     setLeaveTypeId("");
     setEmployeeId("");
+  };
+
+  const handleView = (request: LeaveRequest) => {
+    onView(request);
+  };
+
+  const handleApprove = (request: LeaveRequest) => {
+    onApprove(request);
+  };
+
+  const handleReject = (request: LeaveRequest) => {
+    onReject(request);
+  };
+
+  const handleCancel = (request: LeaveRequest) => {
+    onCancel(request);
   };
 
   return (
@@ -136,7 +162,13 @@ export function LeaveFilters({ requests }: LeaveFiltersProps) {
       </div>
 
       <div className="mt-6">
-        <LeaveRequestTable requests={filteredRequests} />
+        <LeaveRequestTable
+          requests={filteredRequests}
+          onView={handleView}
+          onApprove={handleApprove}
+          onReject={handleReject}
+          onCancel={handleCancel}
+        />
       </div>
     </>
   );
