@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { EmployeeDetails } from "@/components/employees/EmployeeDetails";
 import { EmployeeTable } from "@/components/employees/EmployeeTable";
@@ -20,6 +20,8 @@ const departments = [
   { id: "dept-sales", name: "Sales" },
 ];
 
+const PAGE_SIZE = 10;
+
 export function EmployeeFilters({ initialEmployees }: EmployeeFiltersProps) {
   const [search, setSearch] = useState("");
   const [departmentId, setDepartmentId] = useState("");
@@ -31,9 +33,15 @@ export function EmployeeFilters({ initialEmployees }: EmployeeFiltersProps) {
 
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
+  const [page, setPage] = useState(1);
+
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null,
   );
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, departmentId, status, sortBy, sortOrder]);
 
   const result = useMemo(() => {
     return queryEmployees({
@@ -42,10 +50,10 @@ export function EmployeeFilters({ initialEmployees }: EmployeeFiltersProps) {
       status: status || undefined,
       sortBy,
       sortOrder,
-      page: 1,
-      pageSize: 50,
+      page,
+      pageSize: PAGE_SIZE,
     });
-  }, [search, departmentId, status, sortBy, sortOrder]);
+  }, [search, departmentId, status, sortBy, sortOrder, page]);
 
   const hasFilters = Boolean(
     search ||
@@ -61,15 +69,24 @@ export function EmployeeFilters({ initialEmployees }: EmployeeFiltersProps) {
     setStatus("");
     setSortBy("name");
     setSortOrder("asc");
+    setPage(1);
   };
 
   const employees =
-    result.data.length || search || departmentId || status
+    result.data.length > 0 || hasFilters || page > 1
       ? result.data
-      : initialEmployees;
+      : initialEmployees.slice(0, PAGE_SIZE);
 
   const handleView = (employee: Employee) => {
     setSelectedEmployee(employee);
+  };
+
+  const handlePreviousPage = () => {
+    setPage((currentPage) => Math.max(1, currentPage - 1));
+  };
+
+  const handleNextPage = () => {
+    setPage((currentPage) => Math.min(result.totalPages, currentPage + 1));
   };
 
   return (
@@ -177,9 +194,14 @@ export function EmployeeFilters({ initialEmployees }: EmployeeFiltersProps) {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-4">
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-gray-500">
-            Showing {employees.length} of {result.total} employees
+            {result.total === 0
+              ? "No employees found"
+              : `Showing ${(result.page - 1) * result.pageSize + 1}–${Math.min(
+                  result.page * result.pageSize,
+                  result.total,
+                )} of ${result.total} employees`}
           </p>
 
           <button
@@ -194,8 +216,67 @@ export function EmployeeFilters({ initialEmployees }: EmployeeFiltersProps) {
       </div>
 
       <div className="mt-6">
-        <EmployeeTable employees={employees} onView={handleView} />
+        {employees.length > 0 ? (
+          <EmployeeTable employees={employees} onView={handleView} />
+        ) : (
+          <div className="rounded-xl border bg-white px-6 py-12 text-center shadow-sm">
+            <p className="font-medium text-gray-900">No employees found</p>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Try changing your search or filter criteria.
+            </p>
+          </div>
+        )}
       </div>
+
+      {result.total > 0 && result.totalPages > 1 && (
+        <div className="mt-4 flex flex-col gap-3 rounded-xl border bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-gray-500">
+            Page {result.page} of {result.totalPages}
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handlePreviousPage}
+              disabled={result.page === 1}
+              className="rounded-lg border px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Previous
+            </button>
+
+            <div className="flex items-center gap-1">
+              {Array.from(
+                { length: result.totalPages },
+                (_, index) => index + 1,
+              ).map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  onClick={() => setPage(pageNumber)}
+                  aria-current={result.page === pageNumber ? "page" : undefined}
+                  className={`min-w-9 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                    result.page === pageNumber
+                      ? "bg-gray-900 text-white"
+                      : "border text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleNextPage}
+              disabled={result.page === result.totalPages}
+              className="rounded-lg border px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {selectedEmployee && (
         <EmployeeDetails
