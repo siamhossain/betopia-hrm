@@ -2,6 +2,7 @@ import type { Employee } from "@/types/employee";
 
 interface EmployeeTableProps {
   employees: Employee[];
+  onView: (employee: Employee) => void;
 }
 
 const statusStyles: Record<Employee["status"], string> = {
@@ -26,7 +27,7 @@ const formatDate = (date: string) => {
   }).format(new Date(`${date}T00:00:00`));
 };
 
-export function EmployeeTable({ employees }: EmployeeTableProps) {
+export function EmployeeTable({ employees, onView }: EmployeeTableProps) {
   return (
     <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
       <div className="overflow-x-auto">
@@ -99,6 +100,7 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
                 <td className="px-5 py-4">
                   <button
                     type="button"
+                    onClick={() => onView(employee)}
                     className="text-sm font-medium text-gray-600 hover:text-gray-900"
                   >
                     View

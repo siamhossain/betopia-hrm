@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 
+import { EmployeeDetails } from "@/components/employees/EmployeeDetails";
+import { EmployeeTable } from "@/components/employees/EmployeeTable";
 import { queryEmployees } from "@/services/employeeService";
 import type { Employee } from "@/types/employee";
-import { EmployeeTable } from "@/components/employees/EmployeeTable";
 
 interface EmployeeFiltersProps {
   initialEmployees: Employee[];
@@ -23,10 +24,16 @@ export function EmployeeFilters({ initialEmployees }: EmployeeFiltersProps) {
   const [search, setSearch] = useState("");
   const [departmentId, setDepartmentId] = useState("");
   const [status, setStatus] = useState<Employee["status"] | "">("");
+
   const [sortBy, setSortBy] = useState<"name" | "joiningDate" | "employeeCode">(
     "name",
   );
+
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
+    null,
+  );
 
   const result = useMemo(() => {
     return queryEmployees({
@@ -40,14 +47,6 @@ export function EmployeeFilters({ initialEmployees }: EmployeeFiltersProps) {
     });
   }, [search, departmentId, status, sortBy, sortOrder]);
 
-  const clearFilters = () => {
-    setSearch("");
-    setDepartmentId("");
-    setStatus("");
-    setSortBy("name");
-    setSortOrder("asc");
-  };
-
   const hasFilters = Boolean(
     search ||
     departmentId ||
@@ -56,11 +55,22 @@ export function EmployeeFilters({ initialEmployees }: EmployeeFiltersProps) {
     sortOrder !== "asc",
   );
 
-  const employees = result.data.length
-    ? result.data
-    : search || departmentId || status
-      ? []
+  const clearFilters = () => {
+    setSearch("");
+    setDepartmentId("");
+    setStatus("");
+    setSortBy("name");
+    setSortOrder("asc");
+  };
+
+  const employees =
+    result.data.length || search || departmentId || status
+      ? result.data
       : initialEmployees;
+
+  const handleView = (employee: Employee) => {
+    setSelectedEmployee(employee);
+  };
 
   return (
     <>
@@ -184,8 +194,15 @@ export function EmployeeFilters({ initialEmployees }: EmployeeFiltersProps) {
       </div>
 
       <div className="mt-6">
-        <EmployeeTable employees={employees} />
+        <EmployeeTable employees={employees} onView={handleView} />
       </div>
+
+      {selectedEmployee && (
+        <EmployeeDetails
+          employee={selectedEmployee}
+          onClose={() => setSelectedEmployee(null)}
+        />
+      )}
     </>
   );
 }
